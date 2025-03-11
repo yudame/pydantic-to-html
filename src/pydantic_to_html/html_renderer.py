@@ -3,10 +3,46 @@ HTML renderer for Pydantic models
 """
 
 from html import escape
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional, Union, Literal
 import inspect
 
 from pydantic import BaseModel
+
+
+def render_html(
+    model: BaseModel,
+    editable: bool = False,
+    theme: Optional[str] = None,
+    htmx: bool = False,
+    htmx_mode: Literal["full", "inline", "none"] = "full",
+    max_depth: Optional[int] = None,
+) -> str:
+    """
+    Converts a Pydantic model into HTML (table or form).
+
+    Args:
+        model: The Pydantic model to convert
+        editable: Whether to render as an editable form
+        theme: Optional theme name or custom CSS class prefix
+        htmx: Whether to include HTMX attributes
+        htmx_mode: The HTMX update mode ("full", "inline", or "none")
+        max_depth: Maximum depth for nested models
+
+    Returns:
+        HTML representation of the model
+    """
+    # For now, this is a wrapper around model_to_html for backward compatibility
+    # Will be fully implemented in future versions
+    custom_css = None
+    if theme:
+        # In the future, we'll implement theme support properly
+        custom_css = _get_default_css()
+    
+    return model_to_html(
+        model=model,
+        include_css=True if not theme else False,
+        custom_css=custom_css
+    )
 
 
 def model_to_html(

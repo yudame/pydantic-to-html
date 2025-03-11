@@ -18,6 +18,7 @@
 - Error handling: use explicit exception types, prefer early returns
 - Keep code modular and focused on HTML generation with pure functions
 - Follow Pydantic v2 patterns and conventions
+- Use `render_html` as the primary API function (preferred over `model_to_html`)
 
 ## Development Process
 1. Gather requirements and clearly define functionality

@@ -6,7 +6,7 @@ import unittest
 from pydantic import BaseModel
 from typing import List, Optional
 
-from pydantic_to_html import model_to_html
+from pydantic_to_html import model_to_html, render_html
 
 
 class SimpleModel(BaseModel):
@@ -80,6 +80,19 @@ class TestHtmlRenderer(unittest.TestCase):
         custom_css = ".custom { color: red; }"
         html_with_custom_css = model_to_html(model, include_css=True, custom_css=custom_css)
         self.assertIn("<style>.custom { color: red; }</style>", html_with_custom_css)
+        
+    def test_render_html_function(self):
+        """Test the new render_html function."""
+        model = SimpleModel(name="John Doe", age=30, is_active=True)
+        
+        # Basic rendering
+        html = render_html(model)
+        self.assertIn("<div class=\"pydantic-model\">", html)
+        self.assertIn("<h2 class=\"model-title\">SimpleModel</h2>", html)
+        
+        # With theme (currently just a placeholder)
+        html_with_theme = render_html(model, theme="light")
+        self.assertIn("<div class=\"pydantic-model\">", html_with_theme)
 
 
 if __name__ == "__main__":
