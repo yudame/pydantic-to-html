@@ -44,19 +44,32 @@ Follow [Semantic Versioning](https://semver.org/):
 
 1. **Prepare Release**
    - Create release branch from `develop`
-   - Update version in `src/pydantic_to_html/__init__.py`
-   - Update CHANGELOG.md with new features and fixes
+   - Update version in `src/pydantic_to_html/__init__.py` (e.g., from "0.1.0" to "0.2.0")
+   - Move items from "Unreleased" section in CHANGELOG.md to new version section
+   - Add release date to the new version section in CHANGELOG.md
+   - Ensure all examples and docs are updated to match new features
    - Final QA and documentation review
 
 2. **Testing**
    - Run full test suite: `python -m unittest discover`
-   - Verify examples work: `python examples/basic_example.py`
+   - Run linters and type checking: `ruff check . && mypy src/`
+   - Verify all examples work: 
+     ```bash
+     for example in docs/examples/*.py; do python $example; done
+     ```
    - Check packaging: `python -m build --wheel`
 
 3. **Merge and Tag**
-   - Merge release branch into `main` and `develop`
-   - Create version tag: `git tag -a v0.1.0 -m "First release"`
+   - Open PR from release branch to `main`
+   - Have team review release PR
+   - After approval, merge release branch into `main`
+   - Create annotated version tag with release notes:
+     ```bash
+     git tag -a v$(python -c "import pydantic_to_html; print(pydantic_to_html.__version__)") \
+       -m "Release $(python -c "import pydantic_to_html; print(pydantic_to_html.__version__)")"
+     ```
    - Push tags: `git push --tags`
+   - Merge `main` back into `develop` to sync version changes
 
 4. **Publishing to PyPI**
    ```bash
@@ -69,9 +82,15 @@ Follow [Semantic Versioning](https://semver.org/):
    # Upload to PyPI
    python -m twine upload dist/*
    
-   # Confirm successful upload
-   pip install --upgrade pydantic-to-html
+   # Verify published package
+   pip install --upgrade pydantic-to-html==$(python -c "import pydantic_to_html; print(pydantic_to_html.__version__)")
    ```
+
+5. **Post-Release**
+   - Create new GitHub release pointing to the tag with release notes
+   - Update "Unreleased" section in CHANGELOG.md for future changes
+   - Announce release in relevant channels
+   - Update documentation site if separate from repository
 
 ## Documentation Maintenance
 
