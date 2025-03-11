@@ -23,11 +23,26 @@
 ## Development Process
 1. Gather requirements and clearly define functionality
 2. Write tests that define expected behavior
-3. Implement features until tests pass
-4. Commit changes with descriptive messages
-5. Review code for potential improvements
-6. Refactor code while ensuring tests continue to pass
-7. Final commit and publish to PyPI
+3. Create example code that demonstrates the feature
+4. Implement features until tests pass
+5. Update documentation to reflect new features
+6. Ensure examples match implementation and pass as tests
+7. Commit changes with descriptive messages
+8. Review code for potential improvements
+9. Refactor code while ensuring tests and examples continue to pass
+10. Final commit and publish to PyPI
+
+## Documentation-Tests-Examples Alignment
+
+The golden rule of this project is: **documentation, tests, and examples must always be in sync**.
+
+To maintain this alignment:
+- Every new feature needs both tests and a corresponding example in `docs/examples/`
+- Examples should be written as executable Python files that demonstrate real usage
+- All examples should include expected output in comments
+- Examples should be usable as informal tests and teaching tools
+- When changing the API, update documentation, tests AND examples simultaneously
+- Index new examples in `docs/index.md` when they're added
 
 ## Publishing Workflow
 ```bash
@@ -36,6 +51,12 @@ pip install build twine
 
 # Run tests to ensure quality
 python -m unittest discover
+
+# Run examples to verify they work as expected
+for example in docs/examples/*.py; do
+  echo "Running $example"
+  python $example
+done
 
 # Build the package
 python -m build
