@@ -26,9 +26,21 @@ fi
 # Clean previous builds
 rm -rf dist/ build/ *.egg-info/ 2>/dev/null
 
+# Detect Python command
+if command -v python3 &>/dev/null; then
+    PYTHON=python3
+    PIP=pip3
+elif command -v python &>/dev/null; then
+    PYTHON=python
+    PIP=pip
+else
+    echo "Error: Python not found. Please install Python 3."
+    exit 1
+fi
+
 # Run tests
 echo "Running tests..."
-python -m unittest discover
+$PYTHON -m unittest discover
 if [ $? -ne 0 ]; then
     echo "Error: Tests failed. Aborting publish."
     exit 1
@@ -36,7 +48,7 @@ fi
 
 # Build package
 echo "Building package..."
-python -m build
+$PYTHON -m build
 if [ $? -ne 0 ]; then
     echo "Error: Build failed. Aborting publish."
     exit 1
@@ -44,10 +56,10 @@ fi
 
 # Upload to PyPI
 echo "Uploading to PyPI..."
-TWINE_USERNAME=$pypi_username TWINE_PASSWORD=$pypi_password python -m twine upload dist/*
+TWINE_USERNAME=$pypi_username TWINE_PASSWORD=$pypi_password $PYTHON -m twine upload dist/*
 
 # Verify the upload
 echo "Verifying upload..."
-pip install --upgrade pydantic-to-html
+$PIP install --upgrade pydantic-to-html
 
 echo "Publish process complete!"
