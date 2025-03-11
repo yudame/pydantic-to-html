@@ -58,7 +58,7 @@ Version numbers are maintained in:
 3. Git tags - Create after release is finalized
 
 #### Package Status:
-- Current version: 0.1.0
+- Current version: 0.1.1
 - Published on PyPI: ✅
 - Latest release date: 2025-03-11
 
