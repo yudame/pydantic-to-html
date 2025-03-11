@@ -102,29 +102,37 @@ def render_html(
 
 This is our current development roadmap. Contributions are welcome!
 
-### Phase 1: Basic Rendering
+### Phase 1: Basic Rendering ✅
 - [x] Convert flat Pydantic models into tables
 - [x] Support nested models using recursion
 - [x] Support lists as <ul> elements
 
-### Phase 2: Editable Forms
+### Phase 2: Editable Forms ✅
 - [x] Render models as forms with <input> fields
 - [x] Infer input types from field types
 - [x] Handle lists as multiple input fields
 
-### Phase 3: Advanced Features
+### Phase 3: Advanced Features ✅
 - [x] Add HTMX integration for interactive forms
 - [x] Implement theme support
 - [x] Add validation based on Pydantic constraints
 - [x] Support for complex types (Enum, Literal, etc.)
-- [ ] Add custom rendering hooks
+- [x] Build and publish package to PyPI
 
-### Phase 4: Optimization & Extras
+### Phase 4: Future Enhancements
+- [ ] Add custom rendering hooks
 - [ ] Performance improvements for large models
 - [ ] Add support for custom widgets
-- [x] Implement max_depth control for nested models
 - [ ] Add accessibility features
-- [ ] Comprehensive documentation site
+- [ ] Create comprehensive documentation site
+
+## Installation
+
+The package is available on PyPI:
+
+```bash
+pip install pydantic-to-html
+```
 
 ## License
 
