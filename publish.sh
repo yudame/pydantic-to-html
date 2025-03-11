@@ -19,7 +19,7 @@ if [ "$pypi_username" != "__token__" ]; then
     echo "Error: PyPI now requires API token authentication."
     echo "Please update your .env file with:"
     echo "pypi_username=__token__"
-    echo "pypi_password=pypi-your-token-here"
+    echo "pypi_password=pypi-***-token"
     exit 1
 fi
 
