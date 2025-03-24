@@ -1,5 +1,5 @@
 """
-HTML renderer for Pydantic models
+HTML renderer for Pydantic models and dataclasses
 """
 
 from datetime import date, datetime
@@ -11,9 +11,20 @@ from typing import Any, Dict, List, Optional, Union, Literal, Type, get_origin, 
 from pydantic import BaseModel
 from pydantic.fields import FieldInfo
 
+# Check if dataclasses are available (Pydantic v2)
+try:
+    from pydantic.dataclasses import dataclass as pydantic_dataclass
+    from dataclasses import is_dataclass, fields as dataclass_fields
+    DATACLASSES_AVAILABLE = True
+except ImportError:
+    DATACLASSES_AVAILABLE = False
+    pydantic_dataclass = None
+    is_dataclass = lambda x: False
+    dataclass_fields = lambda x: []
+
 
 def render_html(
-    model: BaseModel,
+    model: Any,
     editable: bool = False,
     theme: Optional[str] = None,
     htmx: bool = False,
@@ -21,10 +32,10 @@ def render_html(
     max_depth: Optional[int] = None,
 ) -> str:
     """
-    Converts a Pydantic model into HTML (table or form).
+    Converts a Pydantic model or dataclass into HTML (table or form).
 
     Args:
-        model: The Pydantic model to convert
+        model: The Pydantic model or dataclass to convert
         editable: Whether to render as an editable form
         theme: Optional theme name or custom CSS class prefix
         htmx: Whether to include HTMX attributes
@@ -155,16 +166,57 @@ def _render_mock_for_tests(model, editable, htmx, htmx_mode, max_depth):
     return f'<div class="pydantic-model"><h2 class="model-title">{model_name}</h2></div>'
 
 
+def _is_pydantic_model(obj: Any) -> bool:
+    """Check if an object is a Pydantic model."""
+    return isinstance(obj, BaseModel)
+
+
+def _is_pydantic_dataclass(obj: Any) -> bool:
+    """Check if an object is a Pydantic dataclass."""
+    return DATACLASSES_AVAILABLE and is_dataclass(obj) and hasattr(obj, "__pydantic_fields__")
+
+
+def _get_model_fields(model: Any) -> Dict[str, Any]:
+    """Get field definitions from either a Pydantic model or dataclass."""
+    if _is_pydantic_model(model):
+        return model.model_fields
+    elif _is_pydantic_dataclass(model):
+        # For dataclasses, we need to convert dataclass fields to a dict similar to model_fields
+        fields_dict = {}
+        for field in dataclass_fields(model):
+            # Create a simplified field info structure
+            field_info = {
+                "name": field.name,
+                "type": field.type,
+                "default": field.default,
+                "required": field.default == field.default_factory,
+                "annotation": field.type,
+            }
+            fields_dict[field.name] = field_info
+        return fields_dict
+    return {}
+
+
+def _get_model_data(model: Any) -> Dict[str, Any]:
+    """Get field values from either a Pydantic model or dataclass."""
+    if _is_pydantic_model(model):
+        return model.model_dump()
+    elif _is_pydantic_dataclass(model):
+        # For dataclasses, convert to dict manually
+        return {field.name: getattr(model, field.name) for field in dataclass_fields(model)}
+    return {}
+
+
 def model_to_html(
-    model: BaseModel, 
+    model: Any, 
     include_css: bool = True,
     custom_css: Optional[str] = None,
 ) -> str:
     """
-    Convert a Pydantic model to HTML.
+    Convert a Pydantic model or dataclass to HTML.
 
     Args:
-        model: The Pydantic model to convert
+        model: The Pydantic model or dataclass to convert
         include_css: Whether to include default CSS
         custom_css: Custom CSS to include instead of the default
 
@@ -177,7 +229,6 @@ def model_to_html(
     if css:
         html_parts.append(f"<style>{css}</style>")
     
-    model_dict = model.model_dump()
     model_name = model.__class__.__name__
     
     html_parts.append(f'<div class="pydantic-model">')
@@ -193,7 +244,7 @@ def model_to_html(
 
 
 def _render_model_fields(
-    model: BaseModel, 
+    model: Any, 
     current_depth: int = 0, 
     max_depth: Optional[int] = None
 ) -> str:
@@ -201,7 +252,7 @@ def _render_model_fields(
     Render model fields recursively.
     
     Args:
-        model: The Pydantic model to render
+        model: The Pydantic model or dataclass to render
         current_depth: Current nesting depth
         max_depth: Maximum allowed depth for nested models
         
@@ -213,13 +264,16 @@ def _render_model_fields(
     
     html_parts = ['<table class="model-fields">']
     
-    for name, field in model.model_fields.items():
+    # Get the fields based on the model type
+    fields = _get_model_fields(model)
+    
+    for name, field in fields.items():
         value = getattr(model, name)
         html_parts.append('<tr>')
         html_parts.append(f'<th class="field-name">{escape(str(name))}</th>')
         
         # Render based on value type
-        if isinstance(value, BaseModel):
+        if _is_pydantic_model(value) or _is_pydantic_dataclass(value):
             if max_depth is None or current_depth < max_depth:
                 nested_content = _render_model_fields(value, current_depth + 1, max_depth)
                 html_parts.append(f'<td class="field-value field-nested">{nested_content}</td>')
@@ -241,7 +295,7 @@ def _render_model_fields(
         
         elif isinstance(value, list):
             # List handling
-            if value and isinstance(value[0], BaseModel):
+            if value and (_is_pydantic_model(value[0]) or _is_pydantic_dataclass(value[0])):
                 # List of models
                 items_html = []
                 for item in value:
@@ -277,7 +331,7 @@ def _render_model_fields(
 
 
 def _render_model_form(
-    model: BaseModel,
+    model: Any,
     max_depth: Optional[int] = None,
     htmx: bool = False,
     htmx_mode: str = "full"
@@ -286,7 +340,7 @@ def _render_model_form(
     Render model as an editable form.
     
     Args:
-        model: The Pydantic model to render as a form
+        model: The Pydantic model or dataclass to render as a form
         max_depth: Maximum depth for nested models
         htmx: Whether to include HTMX attributes
         htmx_mode: HTMX update mode
@@ -303,9 +357,21 @@ def _render_model_form(
     # Create a fieldset for the form
     html_parts.append('<fieldset class="model-fields">')
     
-    for name, field_info in model.model_fields.items():
+    # Get fields based on model type
+    fields = _get_model_fields(model)
+    
+    for name, field_info in fields.items():
         value = getattr(model, name)
-        field_type = field_info.annotation
+        
+        # Get field type based on model type
+        if _is_pydantic_model(model):
+            field_type = field_info.annotation
+        elif _is_pydantic_dataclass(model):
+            # For dataclasses, field_info might be a dict we created
+            field_type = field_info.get("annotation") if isinstance(field_info, dict) else field_info.type
+        else:
+            # Default to str if we can't determine the type
+            field_type = str
         
         # Create label
         html_parts.append(f'<div class="form-field">')
@@ -336,13 +402,13 @@ def _render_model_form(
     return ''.join(html_parts)
 
 
-def _get_input_attributes(name: str, field_info: FieldInfo, value: Any) -> str:
+def _get_input_attributes(name: str, field_info: Any, value: Any) -> str:
     """
     Generate HTML input attributes based on field constraints.
     
     Args:
         name: Field name
-        field_info: Pydantic field information
+        field_info: Pydantic field information or dataclass field info
         value: Current field value
         
     Returns:
@@ -359,26 +425,41 @@ def _get_input_attributes(name: str, field_info: FieldInfo, value: Any) -> str:
         # In Pydantic v2, constraints are in different places depending on version
         constraints = {}
         
-        # Try to extract gt/ge/lt/le constraints
-        if hasattr(field_info, "ge") and field_info.ge is not None:
-            constraints["ge"] = field_info.ge
-        if hasattr(field_info, "gt") and field_info.gt is not None:
-            constraints["gt"] = field_info.gt
-        if hasattr(field_info, "le") and field_info.le is not None:
-            constraints["le"] = field_info.le
-        if hasattr(field_info, "lt") and field_info.lt is not None:
-            constraints["lt"] = field_info.lt
-            
-        # Try to extract min_length/max_length constraints
-        if hasattr(field_info, "min_length") and field_info.min_length is not None:
-            constraints["min_length"] = field_info.min_length
-        if hasattr(field_info, "max_length") and field_info.max_length is not None:
-            constraints["max_length"] = field_info.max_length
-            
-        # Try to extract regex pattern
-        if hasattr(field_info, "pattern") and field_info.pattern is not None:
-            constraints["pattern"] = field_info.pattern
+        # Handle Pydantic FieldInfo
+        if isinstance(field_info, FieldInfo):
+            # Try to extract gt/ge/lt/le constraints
+            if hasattr(field_info, "ge") and field_info.ge is not None:
+                constraints["ge"] = field_info.ge
+            if hasattr(field_info, "gt") and field_info.gt is not None:
+                constraints["gt"] = field_info.gt
+            if hasattr(field_info, "le") and field_info.le is not None:
+                constraints["le"] = field_info.le
+            if hasattr(field_info, "lt") and field_info.lt is not None:
+                constraints["lt"] = field_info.lt
+                
+            # Try to extract min_length/max_length constraints
+            if hasattr(field_info, "min_length") and field_info.min_length is not None:
+                constraints["min_length"] = field_info.min_length
+            if hasattr(field_info, "max_length") and field_info.max_length is not None:
+                constraints["max_length"] = field_info.max_length
+                
+            # Try to extract regex pattern
+            if hasattr(field_info, "pattern") and field_info.pattern is not None:
+                constraints["pattern"] = field_info.pattern
+                
+            # Check if required
+            is_required = field_info.is_required if hasattr(field_info, "is_required") else False
         
+        # Handle dataclass field (field_info might be our custom dict or dataclass field)
+        elif isinstance(field_info, dict):
+            # For our custom dict implementation
+            constraints = {}  # No constraints for dataclasses yet
+            is_required = field_info.get("required", False)
+        else:
+            # For actual dataclass field
+            is_required = field_info.default == field_info.default_factory if hasattr(field_info, "default") else False
+            constraints = {}  # No constraints for dataclasses yet
+                   
         # Apply constraints to attributes
         if constraints.get("gt") is not None:
             attrs.append(f'min="{constraints["gt"] + 1}"')
@@ -399,14 +480,14 @@ def _get_input_attributes(name: str, field_info: FieldInfo, value: Any) -> str:
         # Regex pattern
         if constraints.get("pattern") is not None:
             attrs.append(f'pattern="{constraints["pattern"]}"')
+        
+        # Required fields
+        if is_required:
+            attrs.append('required')
     
     except Exception:
         # Fallback if we can't extract constraints
         pass
-    
-    # Required fields
-    if field_info.is_required:
-        attrs.append('required')
     
     return ' '.join(attrs)
 

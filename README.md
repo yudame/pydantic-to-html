@@ -123,6 +123,7 @@ This is our current development roadmap. Contributions are welcome!
 - [ ] Add custom rendering hooks
 - [ ] Performance improvements for large models
 - [ ] Add support for custom widgets
+- [ ] Add support for Pydantic dataclasses
 - [ ] Add accessibility features
 - [ ] Create comprehensive documentation site
 

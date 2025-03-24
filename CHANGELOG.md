@@ -5,10 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.2.0] - 2025-03-24
 
 ### Added
-- _Future changes will be listed here_
+- Support for Pydantic dataclasses alongside BaseModel
+- New example demonstrating dataclass support (07_dataclass_support.py)
+- Comprehensive test suite for dataclass support
+- Tests for edge cases with both models and dataclasses
+- Documentation updates for dataclass usage
 
 ## [0.1.1] - 2025-03-11
 
